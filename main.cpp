@@ -1,0 +1,40 @@
+#include <windows.h>
+#include <format>
+#include <codecvt>
+#include <filesystem>
+#include "toml++/toml.hpp"
+#include "nya_commonhooklib.h"
+
+#include "nya_commonmath.h"
+
+#include "ac.h"
+
+void OnPluginStartup();
+#include "util.h"
+
+#include "components/customcamera.h"
+
+auto renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))nullptr;
+void __fastcall renderHooked(Game* pThis, GameObject* o, float dt) {
+	pMyPlugin->sim->physicsAvatar->useMatrixSmoothing = false;
+	CustomCamera::ProcessCam(pMyPlugin->sim->sceneCamera, dt);
+	renderHooked_orig(pThis, o, dt);
+}
+
+void OnPluginStartup() {
+	renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))NyaHookLib::PatchRelative(NyaHookLib::CALL, NyaHookLib::mEXEBase + 0x2428B8, &renderHooked);
+}
+
+BOOL WINAPI DllMain(HINSTANCE, DWORD fdwReason, LPVOID) {
+	switch(fdwReason) {
+		case DLL_PROCESS_ATTACH: {
+			if (NyaHookLib::GetEntryPoint() != 0x15AE310) {
+				MessageBoxA(nullptr, "Unsupported game version! Make sure you're using the latest x64 Steam release (.exe size of 22890776 bytes)", "nya?!~", MB_ICONERROR);
+				return TRUE;
+			}
+		} break;
+		default:
+			break;
+	}
+	return TRUE;
+}
