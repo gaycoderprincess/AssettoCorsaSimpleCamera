@@ -16,7 +16,9 @@ void OnPluginStartup();
 
 auto renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))nullptr;
 void __fastcall renderHooked(Game* pThis, GameObject* o, float dt) {
-	pMyPlugin->sim->physicsAvatar->useMatrixSmoothing = false;
+	if (!pMyPlugin->car->ksPhysics->hasSessionStarted(0.0)) {
+		CustomCamera::bReset = true;
+	}
 	CustomCamera::ProcessCam(pMyPlugin->sim->sceneCamera, dt);
 	renderHooked_orig(pThis, o, dt);
 }

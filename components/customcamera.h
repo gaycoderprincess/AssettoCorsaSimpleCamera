@@ -183,6 +183,9 @@ namespace CustomCamera {
 			bReset = true;
 			return;
 		}
+		if (bReset) {
+			SetCameraToDefaultPos(pTargetPlayerVehicle);
+		}
 		bReset = false;
 
 		vPosChange = {0,0,0};
