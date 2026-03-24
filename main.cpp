@@ -14,8 +14,11 @@ void OnPluginStartup();
 
 #include "components/customcamera.h"
 
+bool bCSPHacks = false;
 bool IsChaseCamera() {
-	if (pMyPlugin->sim->cameraManager->mode == CameraMode::eCockpit) return false;
+	if (bCSPHacks) return true;
+
+	if (pMyPlugin->sim->cameraManager->mode != CameraMode::eDrivable) return false;
 	auto mode = pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode;
 	return mode == DrivableCamera::eChase || mode == DrivableCamera::eChase2;
 }
@@ -35,6 +38,11 @@ void __fastcall renderHooked(Game* pThis, GameObject* o, float dt) {
 }
 
 void OnPluginStartup() {
+	if (std::filesystem::exists("plugins/AssettoCorsaSimpleCamera_gcp.toml")) {
+		auto config = toml::parse_file("plugins/AssettoCorsaSimpleCamera_gcp.toml");
+		bCSPHacks = config["csp_compatibility_hack"].value_or(bCSPHacks);
+	}
+
 	renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))NyaHookLib::PatchRelative(NyaHookLib::CALL, NyaHookLib::mEXEBase + 0x2428B8, &renderHooked);
 }
 
