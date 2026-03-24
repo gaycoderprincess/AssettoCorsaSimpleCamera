@@ -14,12 +14,23 @@ void OnPluginStartup();
 
 #include "components/customcamera.h"
 
+bool IsChaseCamera() {
+	if (pMyPlugin->sim->cameraManager->mode == CameraMode::eCockpit) return false;
+	auto mode = pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode;
+	return mode == DrivableCamera::eChase || mode == DrivableCamera::eChase2;
+}
+
 auto renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))nullptr;
 void __fastcall renderHooked(Game* pThis, GameObject* o, float dt) {
-	if (!pMyPlugin->car->ksPhysics->hasSessionStarted(0.0)) {
+	if (IsChaseCamera()) {
+		if (!pMyPlugin->car->ksPhysics->hasSessionStarted(0.0)) {
+			CustomCamera::bReset = true;
+		}
+		CustomCamera::ProcessCam(pMyPlugin->sim->sceneCamera, dt);
+	}
+	else {
 		CustomCamera::bReset = true;
 	}
-	CustomCamera::ProcessCam(pMyPlugin->sim->sceneCamera, dt);
 	renderHooked_orig(pThis, o, dt);
 }
 

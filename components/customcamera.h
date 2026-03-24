@@ -11,8 +11,10 @@ namespace CustomCamera {
 	float fFollowOffset = 1.7;
 	NyaVec3 vLastPlayerPosition = {0, 0, 0};
 	float fMouseRotateSpeed = 1;
-	float fStringMinDistance = 3;
-	float fStringMaxDistance = 3;
+	float fStringMinDistanceClose = 2;
+	float fStringMaxDistanceClose = 2;
+	float fStringMinDistanceFar = 3;
+	float fStringMaxDistanceFar = 3;
 	float fStringVelocityMult = 1;
 	float fStringResetTime = 2;
 	float fStringCorrectionMult = 0.5;
@@ -29,11 +31,21 @@ namespace CustomCamera {
 	}
 
 	double GetMinStringDistance(Car* ply) {
-		return abs(ply->bounds.max.z) * fStringMinDistance;
+		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
+			return abs(ply->bounds.max.z) * fStringMinDistanceClose;
+		}
+		else {
+			return abs(ply->bounds.max.z) * fStringMinDistanceFar;
+		}
 	}
 
 	double GetMaxStringDistance(Car* ply) {
-		return abs(ply->bounds.max.z) * fStringMaxDistance;
+		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
+			return abs(ply->bounds.max.z) * fStringMaxDistanceClose;
+		}
+		else {
+			return abs(ply->bounds.max.z) * fStringMaxDistanceFar;
+		}
 	}
 
 	NyaVec3 GetLookatOffset(Car* ply) {
