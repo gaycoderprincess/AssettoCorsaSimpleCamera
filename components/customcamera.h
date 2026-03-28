@@ -6,6 +6,7 @@ namespace CustomCamera {
 
 	double fMouse[2] = {};
 	NyaVec3 vPos = {0, 0, 0};
+	NyaVec3 vPosAfterLook = {0, 0, 0};
 	NyaVec3 vPosChange = {0, 0, 0};
 	float fLookatOffset = 0.7;
 	float fFollowOffset = 1.7;
@@ -82,6 +83,18 @@ namespace CustomCamera {
 		lookat.Normalize();
 		auto mat = NyaMat4x4::LookAt(lookat);
 		mat.p = vPos;
+		//mat = WorldToRenderMatrix(mat);
+		pCam->matrix = mat;
+	}
+
+	void SetRotationAfterLook(Camera* pCam) {
+		auto plyPos = GetTargetPosition(pTargetPlayerVehicle);
+		if (!plyPos) return;
+
+		auto lookat = vPosAfterLook - *plyPos;
+		lookat.Normalize();
+		auto mat = NyaMat4x4::LookAt(lookat);
+		mat.p = vPosAfterLook;
 		//mat = WorldToRenderMatrix(mat);
 		pCam->matrix = mat;
 	}
@@ -204,6 +217,35 @@ namespace CustomCamera {
 		SetRotation(cam);
 		DoMovement(cam);
 		SetRotation(cam);
+
+		bool lookBack = pMyPlugin->car->controlsProvider->getAction(DriverActions::eLookingBack);
+		bool lookLeft = pMyPlugin->car->controlsProvider->getAction(DriverActions::eLookingLeft);
+		bool lookRight = pMyPlugin->car->controlsProvider->getAction(DriverActions::eLookingRight);
+		if (lookLeft && lookRight) lookBack = true;
+
+		if (lookBack) {
+			auto carPos = GetCarPosition(pTargetPlayerVehicle);
+			vPosAfterLook = vPos;
+			vPosAfterLook -= carPos;
+			vPosAfterLook.x *= -1;
+			vPosAfterLook.z *= -1;
+			vPosAfterLook += carPos;
+			SetRotationAfterLook(cam);
+		}
+		else if (lookRight) {
+			auto carMat = pMyPlugin->carAvatar->physicsState.worldMatrix;
+			vPosAfterLook = carMat.p;
+			vPosAfterLook += carMat.x * GetMaxStringDistance(pTargetPlayerVehicle);
+			vPosAfterLook += carMat.y * GetFollowOffset(pTargetPlayerVehicle).y;
+			SetRotationAfterLook(cam);
+		}
+		else if (lookLeft) {
+			auto carMat = pMyPlugin->carAvatar->physicsState.worldMatrix;
+			vPosAfterLook = carMat.p;
+			vPosAfterLook -= carMat.x * GetMaxStringDistance(pTargetPlayerVehicle);
+			vPosAfterLook += carMat.y * GetFollowOffset(pTargetPlayerVehicle).y;
+			SetRotationAfterLook(cam);
+		}
 
 		if (fMouse[0] != 0.0 || fMouse[1] != 0.0) {
 			fMouseTimer = fStringResetTime;

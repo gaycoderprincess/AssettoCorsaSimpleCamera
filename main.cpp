@@ -14,10 +14,7 @@ void OnPluginStartup();
 
 #include "components/customcamera.h"
 
-bool bCSPHacks = false;
 bool IsChaseCamera() {
-	if (bCSPHacks) return true;
-
 	if (pMyPlugin->sim->cameraManager->mode != CameraMode::eDrivable) return false;
 	auto mode = pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode;
 	return mode == DrivableCamera::eChase || mode == DrivableCamera::eChase2;
@@ -40,7 +37,10 @@ void __fastcall renderHooked(Game* pThis, GameObject* o, float dt) {
 void OnPluginStartup() {
 	if (std::filesystem::exists("plugins/AssettoCorsaSimpleCamera_gcp.toml")) {
 		auto config = toml::parse_file("plugins/AssettoCorsaSimpleCamera_gcp.toml");
-		bCSPHacks = config["csp_compatibility_hack"].value_or(bCSPHacks);
+		CustomCamera::fLookatOffset = config["point_offset"].value_or(CustomCamera::fLookatOffset);
+		CustomCamera::fFollowOffset = config["follow_offset"].value_or(CustomCamera::fFollowOffset);
+		CustomCamera::fStringMinDistanceFar = CustomCamera::fStringMaxDistanceFar = config["distance_far"].value_or(CustomCamera::fStringMaxDistanceFar);
+		CustomCamera::fStringMinDistanceClose = CustomCamera::fStringMaxDistanceClose = config["distance_close"].value_or(CustomCamera::fStringMaxDistanceClose);
 	}
 
 	renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))NyaHookLib::PatchRelative(NyaHookLib::CALL, NyaHookLib::mEXEBase + 0x2428B8, &renderHooked);
