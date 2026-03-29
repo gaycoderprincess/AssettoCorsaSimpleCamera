@@ -32,20 +32,22 @@ namespace CustomCamera {
 	}
 
 	double GetMinStringDistance(Car* ply) {
+		auto bound = std::abs((ply->bounds.max.z - ply->bounds.min.z)) * 0.5;
 		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
-			return abs(ply->bounds.max.z) * fStringMinDistanceClose;
+			return bound * fStringMinDistanceClose;
 		}
 		else {
-			return abs(ply->bounds.max.z) * fStringMinDistanceFar;
+			return bound * fStringMinDistanceFar;
 		}
 	}
 
 	double GetMaxStringDistance(Car* ply) {
+		auto bound = std::abs((ply->bounds.max.z - ply->bounds.min.z)) * 0.5;
 		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
-			return abs(ply->bounds.max.z) * fStringMaxDistanceClose;
+			return bound * fStringMaxDistanceClose;
 		}
 		else {
-			return abs(ply->bounds.max.z) * fStringMaxDistanceFar;
+			return bound * fStringMaxDistanceFar;
 		}
 	}
 
