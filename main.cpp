@@ -39,8 +39,8 @@ void OnPluginStartup() {
 		auto config = toml::parse_file("plugins/AssettoCorsaSimpleCamera_gcp.toml");
 		CustomCamera::fLookatOffset = config["point_offset"].value_or(CustomCamera::fLookatOffset);
 		CustomCamera::fFollowOffset = config["follow_offset"].value_or(CustomCamera::fFollowOffset);
-		CustomCamera::fStringMinDistanceFar = CustomCamera::fStringMaxDistanceFar = config["distance_far"].value_or(CustomCamera::fStringMaxDistanceFar);
-		CustomCamera::fStringMinDistanceClose = CustomCamera::fStringMaxDistanceClose = config["distance_close"].value_or(CustomCamera::fStringMaxDistanceClose);
+		CustomCamera::fStringDistanceFar = config["distance_far"].value_or(CustomCamera::fStringDistanceFar);
+		CustomCamera::fStringDistanceClose = config["distance_close"].value_or(CustomCamera::fStringDistanceClose);
 	}
 
 	renderHooked_orig = (void(__fastcall*)(Game*, GameObject*, float))NyaHookLib::PatchRelative(NyaHookLib::CALL, NyaHookLib::mEXEBase + 0x2428B8, &renderHooked);

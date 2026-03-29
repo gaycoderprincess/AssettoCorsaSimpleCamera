@@ -12,10 +12,8 @@ namespace CustomCamera {
 	float fFollowOffset = 1.7;
 	NyaVec3 vLastPlayerPosition = {0, 0, 0};
 	float fMouseRotateSpeed = 1;
-	float fStringMinDistanceClose = 2;
-	float fStringMaxDistanceClose = 2;
-	float fStringMinDistanceFar = 3;
-	float fStringMaxDistanceFar = 3;
+	float fStringDistanceClose = 2;
+	float fStringDistanceFar = 3;
 	float fStringVelocityMult = 1;
 	float fStringResetTime = 2;
 	float fStringCorrectionMult = 0.5;
@@ -24,41 +22,40 @@ namespace CustomCamera {
 	double fMouseTimer = -1;
 
 	NyaVec3 GetCarPosition(Car* ply) {
-		return pMyPlugin->carAvatar->physicsState.worldMatrix.p;
+		// center the car by bounds on the Y axis, center by wheel positions on the Z axis
 
-		NyaVec3 vec;
-		ply->body->getPosition(&vec, 0.0);
-		return vec;
+		auto mat = pMyPlugin->carAvatar->physicsState.worldMatrix;
+		auto v = mat.p;
+		//v += mat.x * (ply->bounds.max.x + ply->bounds.min.x) * 0.5;
+		v += mat.y * (ply->bounds.max.y + ply->bounds.min.y) * 0.5;
+		//v += mat.z * (ply->bounds.max.z + ply->bounds.min.z) * 0.5;
+
+		NyaVec3 susp1, susp2;
+		ply->tyres[0].hub->getBasePosition(&susp1);
+		ply->tyres[2].hub->getBasePosition(&susp2);
+		v += mat.z * (susp1.z + susp2.z) * 0.5;
+
+		return v;
 	}
 
-	double GetMinStringDistance(Car* ply) {
+	double GetStringDistance(Car* ply) {
 		auto bound = std::abs((ply->bounds.max.z - ply->bounds.min.z)) * 0.5;
 		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
-			return bound * fStringMinDistanceClose;
+			return bound * fStringDistanceClose;
 		}
 		else {
-			return bound * fStringMinDistanceFar;
-		}
-	}
-
-	double GetMaxStringDistance(Car* ply) {
-		auto bound = std::abs((ply->bounds.max.z - ply->bounds.min.z)) * 0.5;
-		if (pMyPlugin->sim->cameraManager->persistanceCameraMode.lastDrivableCameraMode == DrivableCamera::eChase) {
-			return bound * fStringMaxDistanceClose;
-		}
-		else {
-			return bound * fStringMaxDistanceFar;
+			return bound * fStringDistanceFar;
 		}
 	}
 
 	NyaVec3 GetLookatOffset(Car* ply) {
 		float bound = std::abs((ply->bounds.max.y - ply->bounds.min.y)) * 0.5;
-		return {0, std::max(bound, ply->bounds.max.y) * fLookatOffset, 0};
+		return {0, bound * fLookatOffset, 0};
 	}
 
 	NyaVec3 GetFollowOffset(Car* ply) {
 		float bound = std::abs((ply->bounds.max.y - ply->bounds.min.y)) * 0.5;
-		return {0, std::max(bound, ply->bounds.max.y) * fFollowOffset, 0};
+		return {0, bound * fFollowOffset, 0};
 	}
 
 	NyaVec3* GetTargetPosition(Car* ply) {
@@ -105,43 +102,14 @@ namespace CustomCamera {
 
 	void DoCamString() {
 		auto ply = pTargetPlayerVehicle;
-		auto minDist = GetMinStringDistance(ply);
-		auto maxDist = GetMaxStringDistance(ply);
+		auto maxDist = GetStringDistance(ply);
 
 		auto plyPos = GetFollowPosition(ply);
 		auto lookatFront = -(vPos - *plyPos);
 		auto dist = lookatFront.length();
 		lookatFront.Normalize();
-		if (dist > maxDist) {
-			vPos += lookatFront * dist;
-			vPos -= lookatFront * maxDist;
-		} else if (dist < minDist) {
-			vPos += lookatFront * dist;
-			vPos -= lookatFront * minDist;
-		}
-	}
-
-	// alternate string code for treading towards max dist when moving the mouse
-	void DoCamStringAlt() {
-		auto ply = pTargetPlayerVehicle;
-		auto maxDist = GetMaxStringDistance(ply);
-		auto maxChange = vPosChange.length();
-
-		auto plyPos = GetFollowPosition(ply);
-		auto lookatFront = -(vPos - *plyPos);
-		auto dist = lookatFront.length();
-		lookatFront.Normalize();
-		if (dist < maxDist) {
-			vPos -= lookatFront * maxChange * fStringCorrectionMult;
-		}
-
-		lookatFront = -(vPos - *plyPos);
-		dist = lookatFront.length();
-		lookatFront.Normalize();
-		if (dist > maxDist) {
-			vPos += lookatFront * dist;
-			vPos -= lookatFront * maxDist;
-		}
+		vPos += lookatFront * dist;
+		vPos -= lookatFront * maxDist;
 	}
 
 	void DoMovement(Camera* pCam) {
@@ -156,19 +124,12 @@ namespace CustomCamera {
 		NyaVec3 currPos = GetCarPosition(player);
 
 		auto velocity = currPos - vLastPlayerPosition;
-		if ((vPos - *GetFollowPosition(player)).length() >= GetMaxStringDistance(player) * 0.999) {
-			velocity *= fStringVelocityMult;
-		}
+		velocity *= fStringVelocityMult;
 
 		vPos -= vLastPlayerPosition;
 		vPos += currPos;
-		if (fMouseTimer <= 0) {
-			vPos -= velocity;
-			DoCamString();
-		}
-		else {
-			DoCamStringAlt();
-		}
+		vPos -= velocity;
+		DoCamString();
 
 		auto lookat = GetTargetPosition(player);
 		if (vPos.y - lookat->y < fStringMaxYDiff) {
@@ -187,7 +148,7 @@ namespace CustomCamera {
 		mat.p = GetCarPosition(ply);
 		vPos = vLastPlayerPosition = mat.p;
 		vPos += GetFollowOffset(ply);
-		vPos -= mat.z * GetMaxStringDistance(ply);
+		vPos -= mat.z * GetStringDistance(ply);
 		fMouseTimer = -1;
 		fMouse[0] = 0;
 		fMouse[1] = 0;
@@ -238,15 +199,15 @@ namespace CustomCamera {
 		}
 		else if (lookRight) {
 			auto carMat = pMyPlugin->carAvatar->physicsState.worldMatrix;
-			vPosAfterLook = carMat.p;
-			vPosAfterLook += carMat.x * GetMaxStringDistance(pTargetPlayerVehicle);
+			vPosAfterLook = GetCarPosition(pTargetPlayerVehicle);
+			vPosAfterLook += carMat.x * GetStringDistance(pTargetPlayerVehicle);
 			vPosAfterLook += carMat.y * GetFollowOffset(pTargetPlayerVehicle).y;
 			SetRotationAfterLook(cam);
 		}
 		else if (lookLeft) {
 			auto carMat = pMyPlugin->carAvatar->physicsState.worldMatrix;
-			vPosAfterLook = carMat.p;
-			vPosAfterLook -= carMat.x * GetMaxStringDistance(pTargetPlayerVehicle);
+			vPosAfterLook = GetCarPosition(pTargetPlayerVehicle);
+			vPosAfterLook -= carMat.x * GetStringDistance(pTargetPlayerVehicle);
 			vPosAfterLook += carMat.y * GetFollowOffset(pTargetPlayerVehicle).y;
 			SetRotationAfterLook(cam);
 		}
