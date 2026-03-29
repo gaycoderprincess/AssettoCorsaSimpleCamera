@@ -52,11 +52,13 @@ namespace CustomCamera {
 	}
 
 	NyaVec3 GetLookatOffset(Car* ply) {
-		return {0, abs(ply->bounds.max.y) * fLookatOffset, 0};
+		float bound = std::abs((ply->bounds.max.y - ply->bounds.min.y)) * 0.5;
+		return {0, std::max(bound, ply->bounds.max.y) * fLookatOffset, 0};
 	}
 
 	NyaVec3 GetFollowOffset(Car* ply) {
-		return {0, abs(ply->bounds.max.y) * fFollowOffset, 0};
+		float bound = std::abs((ply->bounds.max.y - ply->bounds.min.y)) * 0.5;
+		return {0, std::max(bound, ply->bounds.max.y) * fFollowOffset, 0};
 	}
 
 	NyaVec3* GetTargetPosition(Car* ply) {
