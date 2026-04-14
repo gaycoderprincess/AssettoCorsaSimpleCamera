@@ -173,6 +173,9 @@ namespace CustomCamera {
 			bReset = true;
 			return;
 		}
+		if ((vLastPlayerPosition - GetCarPosition(pTargetPlayerVehicle)).length() > 10) {
+			bReset = true;
+		}
 		if (bReset) {
 			SetCameraToDefaultPos(pTargetPlayerVehicle);
 		}
